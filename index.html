@@ -1,74 +1,133 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <style>
-    body { margin: 0; overflow: hidden; background: #000; }
+    body { 
+      margin: 0; 
+      overflow: hidden; 
+      background: #000; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
     #controls {
       position: absolute;
       top: 20px;
       left: 20px;
       z-index: 100;
       color: white;
-      font-family: monospace;
       background: rgba(0,0,0,0.8);
-      padding: 15px;
-      border-radius: 10px;
+      padding: 20px;
+      border-radius: 15px;
       border: 2px solid #00ffff;
-      max-width: 400px;
+      backdrop-filter: blur(10px);
+    }
+    .title {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #00ffff;
+    }
+    .upload-area {
+      border: 3px dashed #00ffff;
+      border-radius: 10px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: rgba(0,255,255,0.05);
+      margin-bottom: 15px;
+    }
+    .upload-area:hover {
+      background: rgba(0,255,255,0.15);
+      border-color: #ff00ff;
+    }
+    .upload-area.dragover {
+      background: rgba(0,255,255,0.3);
+      border-color: #ff00ff;
+      transform: scale(1.02);
+    }
+    #fileInput {
+      display: none;
     }
     button {
       margin: 5px;
-      padding: 10px 20px;
+      padding: 12px 24px;
       background: rgba(0,255,255,0.2);
       border: 2px solid #00ffff;
       color: white;
       cursor: pointer;
-      border-radius: 5px;
-      font-family: monospace;
+      border-radius: 8px;
+      font-size: 14px;
       transition: all 0.3s;
+      font-weight: 600;
     }
     button:hover {
       background: rgba(0,255,255,0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,255,255,0.3);
+    }
+    button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
     }
     #status {
-      margin-top: 10px;
+      margin-top: 15px;
       color: #00ffff;
-      font-size: 12px;
-      line-height: 1.5;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 10px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 5px;
+      max-height: 150px;
+      overflow-y: auto;
     }
-    #fileInput {
-      margin: 10px 0;
-      color: white;
+    .status-line {
+      margin: 3px 0;
     }
     .error {
-      color: #ff0000;
-      background: rgba(255,0,0,0.1);
-      padding: 5px;
-      border-radius: 3px;
-      margin-top: 5px;
+      color: #ff3366;
+    }
+    .success {
+      color: #00ff88;
+    }
+    .icon {
+      font-size: 48px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
 <div id="controls">
-  <div>🎵 Audio Reactive Generative Art</div>
-  <button id="playBtn">▶ Play 01.mp3</button>
-  <button id="pauseBtn">⏸ Pause</button>
-  <div>또는 파일 선택:</div>
+  <div class="title">🎵 Audio Reactive Visualizer</div>
+  
+  <div class="upload-area" id="uploadArea">
+    <div class="icon">🎧</div>
+    <div>01.mp3 파일을 드래그하거나</div>
+    <div style="margin-top: 10px; color: #00ffff;">클릭해서 선택하세요</div>
+  </div>
+  
   <input type="file" id="fileInput" accept="audio/*">
-  <div id="status">Ready</div>
+  
+  <div>
+    <button id="playBtn" disabled>▶ Play</button>
+    <button id="pauseBtn" disabled>⏸ Pause</button>
+  </div>
+  
+  <div id="status">
+    <div class="status-line">✨ 준비 완료! 음악 파일을 선택하세요</div>
+  </div>
 </div>
 
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/controls/OrbitControls.js';
 
-// 디버그 로그 함수
-function log(message, isError = false) {
+// 로그 함수
+function log(message, type = 'info') {
   const statusDiv = document.getElementById('status');
-  const timestamp = new Date().toLocaleTimeString();
-  const className = isError ? 'error' : '';
-  statusDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+  const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+  const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
+  statusDiv.innerHTML += `<div class="status-line ${className}">${icon} ${message}</div>`;
+  statusDiv.scrollTop = statusDiv.scrollHeight;
   console.log(message);
 }
 
@@ -88,130 +147,139 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
-// 오디오 설정
-let audioContext, analyser, dataArray, audioElement, sourceNode;
+// 오디오 변수
+let audioContext, analyser, dataArray, audioSource;
 let isAudioStarted = false;
+let currentAudioBuffer = null;
 
-// Play 버튼 - 직접 클릭으로 시작
-document.getElementById('playBtn').addEventListener('click', async () => {
+// 파일 업로드 처리
+async function loadAudioFile(file) {
   try {
-    log('🎵 Play 버튼 클릭됨');
+    log(`파일 로딩 중: ${file.name}`, 'info');
     
     // AudioContext 생성
     if (!audioContext) {
-      log('AudioContext 생성 중...');
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioContext.createAnalyser();
       analyser.fftSize = 512;
       analyser.smoothingTimeConstant = 0.8;
       dataArray = new Uint8Array(analyser.frequencyBinCount);
-      log('✅ AudioContext 생성 완료');
+      log('AudioContext 생성 완료', 'success');
     }
     
-    // Audio Element 생성
-    if (!audioElement) {
-      log('Audio Element 생성 중...');
-      audioElement = new Audio();
-      audioElement.src = '01.mp3';
-      audioElement.loop = true;
-      audioElement.volume = 0.7;
-      
-      // 이벤트 리스너
-      audioElement.addEventListener('loadeddata', () => {
-        log('✅ 오디오 파일 로드 완료');
-      });
-      
-      audioElement.addEventListener('error', (e) => {
-        log(`❌ 오디오 로드 에러: ${audioElement.error.message}`, true);
-        log('💡 01.mp3 파일이 HTML과 같은 폴더에 있는지 확인하세요', true);
-        log('💡 로컬 서버로 실행하고 있는지 확인하세요 (python -m http.server)', true);
-      });
-      
-      audioElement.addEventListener('canplay', () => {
-        log('✅ 재생 준비 완료');
-      });
-      
-      // Source Node 연결
-      if (!sourceNode) {
-        sourceNode = audioContext.createMediaElementSource(audioElement);
-        sourceNode.connect(analyser);
-        analyser.connect(audioContext.destination);
-        log('✅ 오디오 노드 연결 완료');
-      }
+    // 기존 오디오 정지
+    if (audioSource) {
+      audioSource.stop();
+      audioSource.disconnect();
     }
+    
+    // 파일 읽기
+    const arrayBuffer = await file.arrayBuffer();
+    log('파일 읽기 완료', 'success');
+    
+    // 오디오 디코딩
+    currentAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    log(`디코딩 완료! (${Math.round(currentAudioBuffer.duration)}초)`, 'success');
+    
+    // 버튼 활성화
+    document.getElementById('playBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled = false;
+    
+    log('▶ Play 버튼을 눌러주세요!', 'success');
+    
+  } catch(e) {
+    log(`에러 발생: ${e.message}`, 'error');
+    console.error(e);
+  }
+}
+
+// 재생 함수
+function playAudio() {
+  try {
+    if (!currentAudioBuffer) {
+      log('먼저 파일을 선택해주세요', 'error');
+      return;
+    }
+    
+    // 기존 소스 정지
+    if (audioSource) {
+      audioSource.stop();
+      audioSource.disconnect();
+    }
+    
+    // 새 소스 생성
+    audioSource = audioContext.createBufferSource();
+    audioSource.buffer = currentAudioBuffer;
+    audioSource.loop = true;
+    audioSource.connect(analyser);
+    analyser.connect(audioContext.destination);
     
     // AudioContext Resume
     if (audioContext.state === 'suspended') {
-      log('AudioContext Resume 중...');
-      await audioContext.resume();
-      log('✅ AudioContext 활성화됨');
+      audioContext.resume();
     }
     
-    // 재생 시작
-    log('재생 시작 중...');
-    await audioElement.play();
+    audioSource.start(0);
     isAudioStarted = true;
-    log('🎵 재생 중!');
+    
+    log('🎵 재생 중!', 'success');
     
   } catch(e) {
-    log(`❌ 에러 발생: ${e.message}`, true);
-    log(`에러 상세: ${e.stack}`, true);
+    log(`재생 에러: ${e.message}`, 'error');
   }
+}
+
+// 일시정지 함수
+function pauseAudio() {
+  if (audioSource) {
+    audioSource.stop();
+    isAudioStarted = false;
+    log('⏸ 일시정지', 'info');
+  }
+}
+
+// 파일 입력 이벤트
+const fileInput = document.getElementById('fileInput');
+const uploadArea = document.getElementById('uploadArea');
+
+uploadArea.addEventListener('click', () => {
+  fileInput.click();
 });
 
-// Pause 버튼
-document.getElementById('pauseBtn').addEventListener('click', () => {
-  if (audioElement) {
-    audioElement.pause();
-    log('⏸ 일시정지');
-  }
-});
-
-// 파일 업로드
-document.getElementById('fileInput').addEventListener('change', async (e) => {
+fileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
-  if (!file) return;
-  
-  try {
-    log(`📁 파일 선택됨: ${file.name}`);
-    
-    // 기존 오디오 정지
-    if (audioElement) {
-      audioElement.pause();
-      audioElement = null;
-      sourceNode = null;
-    }
-    
-    // AudioContext 생성
-    if (!audioContext) {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.8;
-      dataArray = new Uint8Array(analyser.frequencyBinCount);
-    }
-    
-    log('파일 디코딩 중...');
-    const arrayBuffer = await file.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    
-    log('재생 준비 중...');
-    const bufferSource = audioContext.createBufferSource();
-    bufferSource.buffer = audioBuffer;
-    bufferSource.loop = true;
-    bufferSource.connect(analyser);
-    analyser.connect(audioContext.destination);
-    bufferSource.start(0);
-    
-    isAudioStarted = true;
-    log(`🎵 ${file.name} 재생 중!`);
-    
-  } catch(e) {
-    log(`❌ 파일 로드 에러: ${e.message}`, true);
+  if (file) {
+    loadAudioFile(file);
   }
 });
 
-// 3D 오브젝트들
+// 드래그 앤 드롭
+uploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadArea.classList.add('dragover');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+  uploadArea.classList.remove('dragover');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadArea.classList.remove('dragover');
+  
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('audio/')) {
+    loadAudioFile(file);
+  } else {
+    log('오디오 파일만 업로드 가능합니다', 'error');
+  }
+});
+
+// 버튼 이벤트
+document.getElementById('playBtn').addEventListener('click', playAudio);
+document.getElementById('pauseBtn').addEventListener('click', pauseAudio);
+
+// 3D 오브젝트 생성
 const sphereGeometry = new THREE.IcosahedronGeometry(15, 4);
 const sphereMaterial = new THREE.MeshPhongMaterial({
   color: 0x00ffff,
@@ -233,6 +301,7 @@ const wireframeMaterial = new THREE.MeshBasicMaterial({
 const wireframe = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
 scene.add(wireframe);
 
+// 파티클 링
 const ringParticles = [];
 const ringCount = 3;
 
@@ -263,6 +332,7 @@ for(let ring = 0; ring < ringCount; ring++) {
   scene.add(particles);
 }
 
+// 조명
 const pointLight = new THREE.PointLight(0xffffff, 1, 100);
 pointLight.position.set(0, 0, 30);
 scene.add(pointLight);
@@ -285,6 +355,7 @@ function animate() {
     const mid = dataArray.slice(10, 50).reduce((a, b) => a + b) / 40;
     const treble = dataArray.slice(50, 100).reduce((a, b) => a + b) / 50;
     
+    // 구체 변형
     const vertices = sphere.geometry.attributes.position.array;
     
     for(let i = 0; i < vertices.length; i += 3) {
@@ -301,14 +372,17 @@ function animate() {
     }
     sphere.geometry.attributes.position.needsUpdate = true;
     
+    // 색상 변화
     const hue = (time * 0.1 + mid / 255) % 1;
     sphereMaterial.color.setHSL(hue, 1, 0.5);
     sphereMaterial.emissive.setHSL(hue, 1, 0.2);
     
+    // 와이어프레임
     wireframe.rotation.x = time * 0.5;
     wireframe.rotation.y = time * 0.3;
     wireframe.scale.set(1 + treble/255 * 0.3, 1 + treble/255 * 0.3, 1 + treble/255 * 0.3);
     
+    // 파티클 링
     ringParticles.forEach((ring, idx) => {
       ring.rotation.y = time * (0.2 + idx * 0.1);
       ring.material.size = 0.5 + (dataArray[idx * 30] / 255) * 2;
@@ -317,9 +391,11 @@ function animate() {
       ring.material.color.setHSL(hue, 1, 0.5);
     });
     
+    // 조명
     pointLight.intensity = 1 + bass / 255 * 2;
     pointLight.color.setHSL((time * 0.1) % 1, 1, 0.5);
   } else {
+    // 기본 애니메이션
     sphere.rotation.y += 0.005;
     wireframe.rotation.x += 0.002;
     wireframe.rotation.y += 0.003;
@@ -339,9 +415,6 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
-log('✅ 페이지 로드 완료');
-log('💡 Play 버튼을 클릭하거나 파일을 선택하세요');
 </script>
 </body>
 </html>
