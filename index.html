@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AQUA DIGITAL NATURE</title>
+  <title>AQUA DIGITAL NATURE - Custom 3D</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;500;700&display=swap');
     
@@ -100,6 +100,7 @@
       border: 1px solid rgba(255,255,255,0.4);
       box-shadow: 0 8px 32px rgba(0,0,0,0.1);
       display: none;
+      max-width: 300px;
     }
     #controls.visible { display: block; }
     
@@ -109,6 +110,16 @@
       letter-spacing: 2px;
       color: #fff;
       margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+    
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.8);
+      margin-top: 15px;
+      margin-bottom: 8px;
       text-transform: uppercase;
     }
     
@@ -141,6 +152,11 @@
       box-shadow: 0 4px 15px rgba(255,255,255,0.3);
     }
     
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
     #status {
       margin-top: 12px;
       padding: 12px;
@@ -148,7 +164,7 @@
       border-radius: 10px;
       font-size: 10px;
       color: rgba(255,255,255,0.95);
-      max-height: 90px;
+      max-height: 120px;
       overflow-y: auto;
       font-family: 'Courier New', monospace;
       line-height: 1.5;
@@ -158,7 +174,16 @@
     #status::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 3px; }
     #status::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 3px; }
     
-    #fileInput { display: none; }
+    .file-input { display: none; }
+    
+    .model-info {
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.9);
+    }
     
     canvas { display: block; }
   </style>
@@ -167,33 +192,48 @@
 
 <div id="startScreen">
   <div class="title">AQUA DIGITAL</div>
-  <div class="subtitle">Nature Visualizer</div>
+  <div class="subtitle">Custom 3D Visualizer</div>
   <button id="startBtn">Enter</button>
 </div>
 
 <div id="controls">
-  <div class="control-title">Control</div>
+  <div class="control-title">Control Panel</div>
   
+  <div class="section-title">🎵 Audio</div>
   <div class="btn-group">
     <button id="playTestBtn">▶ Test</button>
     <button id="stopBtn">■ Stop</button>
   </div>
   
   <div class="btn-group">
-    <button id="uploadBtn">+ Audio</button>
+    <button id="uploadAudioBtn">+ Audio File</button>
   </div>
   
-  <input type="file" id="fileInput" accept="audio/*">
+  <div class="section-title">🎨 3D Model</div>
+  <div class="btn-group">
+    <button id="upload3DBtn">+ Load GLB/GLTF</button>
+    <button id="remove3DBtn" disabled>✕ Remove</button>
+  </div>
+  
+  <div id="modelInfo" class="model-info" style="display:none;">
+    <div>📦 Model: <span id="modelName">-</span></div>
+    <div>📏 Size: <span id="modelSize">-</span></div>
+  </div>
+  
+  <input type="file" id="audioInput" class="file-input" accept="audio/*">
+  <input type="file" id="modelInput" class="file-input" accept=".glb,.gltf">
   
   <div id="status">> Ready...</div>
 </div>
 
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js';
 
 function log(msg) {
   const status = document.getElementById('status');
-  status.innerHTML += `<div>> ${msg}</div>`;
+  const time = new Date().toLocaleTimeString();
+  status.innerHTML += `<div>> [${time}] ${msg}</div>`;
   status.scrollTop = status.scrollHeight;
 }
 
@@ -212,7 +252,15 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x87CEEB, 1);
 document.body.appendChild(renderer.domElement);
 
-// ===== 1. 중앙 지구본 (반투명 글래스) =====
+// GLTF 로더
+const gltfLoader = new GLTFLoader();
+let customModel = null;
+let customModelGroup = new THREE.Group();
+scene.add(customModelGroup);
+
+// ===== 기존 씬 요소들 =====
+
+// 1. 중앙 지구본
 const globeGeo = new THREE.SphereGeometry(18, 64, 64);
 const globeMat = new THREE.MeshPhysicalMaterial({
   color: 0x4A90E2,
@@ -228,7 +276,6 @@ const globeMat = new THREE.MeshPhysicalMaterial({
 const globe = new THREE.Mesh(globeGeo, globeMat);
 scene.add(globe);
 
-// 지구본 내부 코어
 const coreGeo = new THREE.SphereGeometry(12, 32, 32);
 const coreMat = new THREE.MeshStandardMaterial({
   color: 0x98D8C8,
@@ -240,7 +287,7 @@ const coreMat = new THREE.MeshStandardMaterial({
 const core = new THREE.Mesh(coreGeo, coreMat);
 scene.add(core);
 
-// ===== 2. 물방울들 (주파수 반응) =====
+// 2. 물방울들
 const waterDrops = [];
 const dropCount = 60;
 for(let i = 0; i < dropCount; i++) {
@@ -274,12 +321,11 @@ for(let i = 0; i < dropCount; i++) {
   scene.add(drop);
 }
 
-// ===== 3. 나비들 (3D 모델 대신 간단한 형태) =====
+// 3. 나비들
 const butterflies = [];
 for(let i = 0; i < 15; i++) {
   const group = new THREE.Group();
   
-  // 나비 날개 (두 개의 원뿔)
   const wingGeo = new THREE.ConeGeometry(1.5, 3, 8);
   const wingMat = new THREE.MeshStandardMaterial({
     color: new THREE.Color().setHSL(Math.random() * 0.15 + 0.05, 0.8, 0.6),
@@ -313,45 +359,7 @@ for(let i = 0; i < 15; i++) {
   scene.add(group);
 }
 
-// ===== 4. 떠다니는 섬들 (자연 요소) =====
-const islands = [];
-for(let i = 0; i < 5; i++) {
-  const islandGroup = new THREE.Group();
-  
-  // 땅 (초록색 구체)
-  const landGeo = new THREE.SphereGeometry(4, 16, 16);
-  const landMat = new THREE.MeshStandardMaterial({
-    color: 0x7CB342,
-    roughness: 0.8
-  });
-  const land = new THREE.Mesh(landGeo, landMat);
-  land.scale.y = 0.5;
-  islandGroup.add(land);
-  
-  // 나무 (원뿔)
-  const treeGeo = new THREE.ConeGeometry(2, 6, 8);
-  const treeMat = new THREE.MeshStandardMaterial({
-    color: 0x558B2F
-  });
-  const tree = new THREE.Mesh(treeGeo, treeMat);
-  tree.position.y = 3;
-  islandGroup.add(tree);
-  
-  islandGroup.position.set(
-    (Math.random() - 0.5) * 100,
-    Math.random() * 30 - 10,
-    (Math.random() - 0.5) * 60
-  );
-  
-  islands.push({
-    group: islandGroup,
-    speed: Math.random() * 0.005 + 0.002,
-    offset: Math.random() * Math.PI * 2
-  });
-  scene.add(islandGroup);
-}
-
-// ===== 5. 물결 효과 (평면) =====
+// 4. 물결
 const waterGeo = new THREE.PlaneGeometry(200, 200, 50, 50);
 const waterMat = new THREE.MeshStandardMaterial({
   color: 0x4FC3F7,
@@ -366,10 +374,9 @@ water.rotation.x = -Math.PI / 2;
 water.position.y = -30;
 scene.add(water);
 
-// 물결 애니메이션을 위한 버텍스 저장
 const waterPositions = waterGeo.attributes.position;
 
-// ===== 6. 구름 파티클 =====
+// 5. 구름
 const cloudParticles = [];
 for(let i = 0; i < 20; i++) {
   const cloudGeo = new THREE.SphereGeometry(5, 8, 8);
@@ -388,7 +395,7 @@ for(let i = 0; i < 20; i++) {
   scene.add(cloud);
 }
 
-// ===== 7. 별 파티클 =====
+// 6. 별
 const starCount = 1500;
 const starGeo = new THREE.BufferGeometry();
 const starPositions = new Float32Array(starCount * 3);
@@ -419,7 +426,7 @@ const starMat = new THREE.PointsMaterial({
 const stars = new THREE.Points(starGeo, starMat);
 scene.add(stars);
 
-// ===== 조명 =====
+// 조명
 const sunLight = new THREE.DirectionalLight(0xFFFFAA, 1.5);
 sunLight.position.set(50, 50, 50);
 scene.add(sunLight);
@@ -438,12 +445,64 @@ scene.add(pointLight2);
 const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.5);
 scene.add(ambientLight);
 
+// ===== 3D 모델 로드 함수 =====
+function load3DModel(file) {
+  log(`Loading 3D model: ${file.name}`);
+  
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    const arrayBuffer = e.target.result;
+    
+    gltfLoader.parse(arrayBuffer, '', function(gltf) {
+      // 기존 모델 제거
+      if (customModel) {
+        customModelGroup.remove(customModel);
+      }
+      
+      customModel = gltf.scene;
+      
+      // 모델 크기 조정
+      const box = new THREE.Box3().setFromObject(customModel);
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = 30 / maxDim; // 적절한 크기로 스케일
+      customModel.scale.setScalar(scale);
+      
+      // 모델 중앙 정렬
+      box.setFromObject(customModel);
+      const center = box.getCenter(new THREE.Vector3());
+      customModel.position.sub(center);
+      
+      // 위치 조정 (지구본 위에)
+      customModel.position.y += 30;
+      
+      customModelGroup.add(customModel);
+      
+      log(`✓ Model loaded: ${file.name}`);
+      log(`  Size: ${size.x.toFixed(1)} x ${size.y.toFixed(1)} x ${size.z.toFixed(1)}`);
+      
+      // UI 업데이트
+      document.getElementById('modelName').textContent = file.name;
+      document.getElementById('modelSize').textContent = 
+        `${size.x.toFixed(1)} x ${size.y.toFixed(1)} x ${size.z.toFixed(1)}`;
+      document.getElementById('modelInfo').style.display = 'block';
+      document.getElementById('remove3DBtn').disabled = false;
+      
+    }, function(error) {
+      log(`✗ Error loading model: ${error.message}`);
+    });
+  };
+  
+  reader.readAsArrayBuffer(file);
+}
+
 // ===== 오디오 =====
 let audioContext, analyser, dataArray, currentSource;
 let isPlaying = false;
 
 document.getElementById('startBtn').addEventListener('click', function() {
-  log('Initializing...');
+  log('Initializing audio context...');
   
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -451,18 +510,18 @@ document.getElementById('startBtn').addEventListener('click', function() {
     analyser.fftSize = 256;
     dataArray = new Uint8Array(analyser.frequencyBinCount);
     
-    log('Ready');
+    log('✓ Audio ready');
     
     document.getElementById('startScreen').classList.add('hidden');
     document.getElementById('controls').classList.add('visible');
     
   } catch(e) {
-    log(`Error: ${e.message}`);
+    log(`✗ Error: ${e.message}`);
   }
 });
 
 document.getElementById('playTestBtn').addEventListener('click', function() {
-  log('Test...');
+  log('Playing test tone...');
   
   if (!audioContext) return;
   
@@ -491,17 +550,18 @@ document.getElementById('playTestBtn').addEventListener('click', function() {
     currentSource = osc;
     isPlaying = true;
     
-    log('Playing');
+    log('▶ Playing');
     
     setTimeout(() => {
       if (osc) {
         osc.stop();
-        log('Stopped');
+        log('■ Stopped');
+        isPlaying = false;
       }
     }, 3000);
     
   } catch(e) {
-    log(`Error: ${e.message}`);
+    log(`✗ Error: ${e.message}`);
   }
 });
 
@@ -510,19 +570,19 @@ document.getElementById('stopBtn').addEventListener('click', function() {
     currentSource.stop();
     currentSource = null;
     isPlaying = false;
-    log('Stopped');
+    log('■ Stopped');
   }
 });
 
-document.getElementById('uploadBtn').addEventListener('click', function() {
-  document.getElementById('fileInput').click();
+document.getElementById('uploadAudioBtn').addEventListener('click', function() {
+  document.getElementById('audioInput').click();
 });
 
-document.getElementById('fileInput').addEventListener('change', async function(e) {
+document.getElementById('audioInput').addEventListener('change', async function(e) {
   const file = e.target.files[0];
   if (!file) return;
   
-  log(`Loading: ${file.name}`);
+  log(`Loading audio: ${file.name}`);
   
   if (!audioContext) return;
   
@@ -530,7 +590,7 @@ document.getElementById('fileInput').addEventListener('change', async function(e
     const arrayBuffer = await file.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     
-    log(`${Math.round(audioBuffer.duration)}s`);
+    log(`✓ Audio loaded (${Math.round(audioBuffer.duration)}s)`);
     
     if (currentSource) {
       currentSource.stop();
@@ -551,10 +611,35 @@ document.getElementById('fileInput').addEventListener('change', async function(e
     currentSource = source;
     isPlaying = true;
     
-    log('Playing');
+    log('▶ Playing');
     
   } catch(e) {
-    log(`Error: ${e.message}`);
+    log(`✗ Error: ${e.message}`);
+  }
+});
+
+// 3D 모델 업로드
+document.getElementById('upload3DBtn').addEventListener('click', function() {
+  document.getElementById('modelInput').click();
+});
+
+document.getElementById('modelInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  load3DModel(file);
+});
+
+// 3D 모델 제거
+document.getElementById('remove3DBtn').addEventListener('click', function() {
+  if (customModel) {
+    customModelGroup.remove(customModel);
+    customModel = null;
+    
+    document.getElementById('modelInfo').style.display = 'none';
+    document.getElementById('remove3DBtn').disabled = true;
+    
+    log('✓ Model removed');
   }
 });
 
@@ -585,6 +670,17 @@ function animate() {
     core.rotation.y -= 0.002;
     coreMat.emissiveIntensity = 0.4 + (mid/255) * 0.6;
     
+    // 커스텀 3D 모델 애니메이션
+    if (customModel) {
+      customModel.rotation.y += 0.01;
+      customModel.rotation.x = Math.sin(time) * 0.2;
+      
+      const modelScale = 1 + (bass/255) * 0.3;
+      customModel.scale.setScalar(modelScale);
+      
+      customModel.position.y = 30 + Math.sin(time * 2) * 5 + (mid/255) * 10;
+    }
+    
     // 물방울들
     waterDrops.forEach((item, i) => {
       const idx = Math.floor((i / waterDrops.length) * dataArray.length);
@@ -595,28 +691,18 @@ function animate() {
       item.mesh.material.opacity = 0.5 + value * 0.4;
     });
     
-    // 나비들 - 날개 펄럭임
+    // 나비들
     butterflies.forEach((item, i) => {
       const freqValue = dataArray[i * 8] / 255;
       
       item.group.position.y += Math.sin(time * 3 + item.offset) * 0.1;
       item.group.rotation.y += 0.02;
       
-      // 날개 펄럭임
       const wingAngle = Math.sin(time * 10) * 0.5;
       item.leftWing.rotation.y = wingAngle;
       item.rightWing.rotation.y = -wingAngle;
       
       item.group.scale.setScalar(1 + freqValue * 0.3);
-    });
-    
-    // 섬들
-    islands.forEach((item, i) => {
-      item.group.position.y += Math.sin(time + item.offset) * item.speed;
-      item.group.rotation.y += 0.002;
-      
-      const freqValue = dataArray[i * 20] / 255;
-      item.group.scale.setScalar(1 + freqValue * 0.2);
     });
     
     // 물결
@@ -654,6 +740,12 @@ function animate() {
     core.rotation.x += 0.001;
     core.rotation.y -= 0.001;
     
+    // 커스텀 모델 기본 회전
+    if (customModel) {
+      customModel.rotation.y += 0.005;
+      customModel.position.y = 30 + Math.sin(time) * 3;
+    }
+    
     waterDrops.forEach((item) => {
       item.mesh.position.y = Math.sin(time + item.offset) * 10;
     });
@@ -665,11 +757,6 @@ function animate() {
       const wingAngle = Math.sin(time * 8) * 0.4;
       item.leftWing.rotation.y = wingAngle;
       item.rightWing.rotation.y = -wingAngle;
-    });
-    
-    islands.forEach((item) => {
-      item.group.position.y += Math.sin(time + item.offset) * item.speed;
-      item.group.rotation.y += 0.001;
     });
     
     for(let i = 0; i < waterPositions.count; i++) {
@@ -699,7 +786,8 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-log('Ready');
+log('✓ System ready');
+log('Upload GLB/GLTF file to add your 3D model!');
 </script>
 </body>
 </html>
