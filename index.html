@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AQUA DIGITAL NATURE - Custom 3D</title>
+  <title>AQUA DIGITAL NATURE - Multi Model + Orbit</title>
   <link rel="icon" href="data:,">
 
   <script type="importmap">
@@ -114,11 +114,27 @@
       border: 1px solid rgba(255,255,255,0.4);
       box-shadow: 0 8px 32px rgba(0,0,0,0.1);
       display: none;
-      max-width: 300px;
+      max-width: 320px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     #controls.visible {
       display: block;
+    }
+
+    #controls::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #controls::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+    }
+
+    #controls::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.4);
+      border-radius: 3px;
     }
 
     .control-title {
@@ -174,6 +190,10 @@
       cursor: not-allowed;
     }
 
+    button:active {
+      transform: translateY(0);
+    }
+
     #status {
       margin-top: 12px;
       padding: 12px;
@@ -205,13 +225,65 @@
       display: none;
     }
 
-    .model-info {
+    .model-list {
       margin-top: 10px;
+    }
+
+    .model-item {
       padding: 10px;
       background: rgba(255,255,255,0.15);
       border-radius: 8px;
       font-size: 10px;
       color: rgba(255,255,255,0.9);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .model-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .model-item-name {
+      font-weight: 600;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .model-item-size {
+      opacity: 0.8;
+      font-size: 9px;
+    }
+
+    .model-item-remove {
+      padding: 6px 12px;
+      font-size: 9px;
+      flex-shrink: 0;
+    }
+
+    .camera-controls {
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      font-size: 10px;
+    }
+
+    .camera-controls label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .camera-controls input[type="checkbox"] {
+      cursor: pointer;
     }
 
     canvas {
@@ -223,7 +295,7 @@
 
   <div id="startScreen">
     <div class="title">AQUA DIGITAL</div>
-    <div class="subtitle">Custom 3D Visualizer</div>
+    <div class="subtitle">Multi Model + Orbit Control</div>
     <button id="startBtn">Enter</button>
   </div>
 
@@ -240,19 +312,24 @@
       <button id="uploadAudioBtn">+ Audio File</button>
     </div>
 
-    <div class="section-title">🎨 3D Model</div>
+    <div class="section-title">🎨 3D Models</div>
     <div class="btn-group">
-      <button id="upload3DBtn">+ Load GLB/GLTF</button>
-      <button id="remove3DBtn" disabled>✕ Remove</button>
+      <button id="upload3DBtn">+ Add GLB/GLTF</button>
+      <button id="removeAllBtn" disabled>✕ Remove All</button>
     </div>
 
-    <div id="modelInfo" class="model-info" style="display:none;">
-      <div>📦 Model: <span id="modelName">-</span></div>
-      <div>📏 Size: <span id="modelSize">-</span></div>
+    <div id="modelList" class="model-list"></div>
+
+    <div class="section-title">📷 Camera</div>
+    <div class="camera-controls">
+      <label>
+        <input type="checkbox" id="autoRotateToggle">
+        Auto Rotate
+      </label>
     </div>
 
     <input type="file" id="audioInput" class="file-input" accept="audio/*">
-    <input type="file" id="modelInput" class="file-input" accept=".glb,.gltf,model/gltf-binary,model/gltf+json">
+    <input type="file" id="modelInput" class="file-input" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" multiple>
 
     <div id="status">> Ready...</div>
   </div>
@@ -260,6 +337,7 @@
   <script type="module">
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
     function log(msg) {
       const status = document.getElementById('status');
@@ -283,12 +361,19 @@
     renderer.setClearColor(0x87CEEB, 1);
     document.body.appendChild(renderer.domElement);
 
+    // OrbitControls 추가
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 30;
+    controls.maxDistance = 200;
+    controls.maxPolarAngle = Math.PI / 1.5;
+    controls.autoRotate = false;
+    controls.autoRotateSpeed = 0.5;
+
     const gltfLoader = new GLTFLoader();
-    let customModel = null;
-    let customModelGroup = new THREE.Group();
-    let baseModelScale = 1;
-    let baseModelY = 30;
-    scene.add(customModelGroup);
+    const customModels = [];
+    let modelIdCounter = 0;
 
     const globeGeo = new THREE.SphereGeometry(18, 64, 64);
     const globeMat = new THREE.MeshPhysicalMaterial({
@@ -485,6 +570,47 @@
       });
     }
 
+    function updateModelListUI() {
+      const listEl = document.getElementById('modelList');
+      listEl.innerHTML = '';
+
+      if (customModels.length === 0) {
+        document.getElementById('removeAllBtn').disabled = true;
+        return;
+      }
+
+      document.getElementById('removeAllBtn').disabled = false;
+
+      customModels.forEach((modelData) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'model-item';
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'model-item-info';
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'model-item-name';
+        nameDiv.textContent = `📦 ${modelData.name}`;
+
+        const sizeDiv = document.createElement('div');
+        sizeDiv.className = 'model-item-size';
+        sizeDiv.textContent = `Size: ${modelData.sizeText}`;
+
+        infoDiv.appendChild(nameDiv);
+        infoDiv.appendChild(sizeDiv);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'model-item-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.onclick = () => removeModel(modelData.id);
+
+        itemDiv.appendChild(infoDiv);
+        itemDiv.appendChild(removeBtn);
+
+        listEl.appendChild(itemDiv);
+      });
+    }
+
     function load3DModel(file) {
       log(`Loading 3D model: ${file.name}`);
 
@@ -497,37 +623,52 @@
           arrayBuffer,
           '',
           function(gltf) {
-            if (customModel) {
-              customModelGroup.remove(customModel);
-              disposeHierarchy(customModel);
-            }
+            const model = gltf.scene;
+            const id = modelIdCounter++;
 
-            customModel = gltf.scene;
-
-            const box = new THREE.Box3().setFromObject(customModel);
+            const box = new THREE.Box3().setFromObject(model);
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z) || 1;
-            baseModelScale = 30 / maxDim;
+            const baseScale = 30 / maxDim;
 
-            customModel.scale.setScalar(baseModelScale);
+            model.scale.setScalar(baseScale);
 
-            box.setFromObject(customModel);
+            box.setFromObject(model);
             const center = box.getCenter(new THREE.Vector3());
-            customModel.position.sub(center);
+            model.position.sub(center);
 
-            baseModelY = 30;
-            customModel.position.y += baseModelY;
+            // 모델들을 원형으로 배치
+            const angle = (customModels.length / 5) * Math.PI * 2;
+            const radius = 50;
+            const baseX = Math.cos(angle) * radius;
+            const baseZ = Math.sin(angle) * radius;
+            const baseY = 30 + customModels.length * 15;
 
-            customModelGroup.add(customModel);
+            model.position.x += baseX;
+            model.position.y += baseY;
+            model.position.z += baseZ;
+
+            scene.add(model);
+
+            const modelData = {
+              id,
+              name: file.name,
+              model,
+              baseScale,
+              baseX,
+              baseY,
+              baseZ,
+              rotationSpeed: 0.005 + Math.random() * 0.01,
+              floatOffset: Math.random() * Math.PI * 2,
+              sizeText: `${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)}`
+            };
+
+            customModels.push(modelData);
 
             log(`✓ Model loaded: ${file.name}`);
-            log(`  Size: ${size.x.toFixed(1)} x ${size.y.toFixed(1)} x ${size.z.toFixed(1)}`);
+            log(`  ID: ${id}, Size: ${modelData.sizeText}`);
 
-            document.getElementById('modelName').textContent = file.name;
-            document.getElementById('modelSize').textContent =
-              `${size.x.toFixed(1)} x ${size.y.toFixed(1)} x ${size.z.toFixed(1)}`;
-            document.getElementById('modelInfo').style.display = 'block';
-            document.getElementById('remove3DBtn').disabled = false;
+            updateModelListUI();
           },
           function(error) {
             log(`✗ Error loading model: ${error?.message || error}`);
@@ -536,6 +677,32 @@
       };
 
       reader.readAsArrayBuffer(file);
+    }
+
+    function removeModel(id) {
+      const index = customModels.findIndex(m => m.id === id);
+      if (index === -1) return;
+
+      const modelData = customModels[index];
+      scene.remove(modelData.model);
+      disposeHierarchy(modelData.model);
+
+      customModels.splice(index, 1);
+
+      log(`✓ Model removed: ${modelData.name}`);
+      updateModelListUI();
+    }
+
+    function removeAllModels() {
+      customModels.forEach((modelData) => {
+        scene.remove(modelData.model);
+        disposeHierarchy(modelData.model);
+      });
+
+      customModels.length = 0;
+
+      log('✓ All models removed');
+      updateModelListUI();
     }
 
     let audioContext, analyser, dataArray, currentSource;
@@ -555,6 +722,10 @@
         }
 
         log('✓ Audio ready');
+        log('✓ OrbitControls enabled');
+        log('  - Left drag: Rotate');
+        log('  - Right drag: Pan');
+        log('  - Wheel: Zoom');
 
         document.getElementById('startScreen').classList.add('hidden');
         document.getElementById('controls').classList.add('visible');
@@ -669,23 +840,23 @@
     });
 
     document.getElementById('modelInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      load3DModel(file);
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+
+      files.forEach(file => load3DModel(file));
+
+      e.target.value = '';
     });
 
-    document.getElementById('remove3DBtn').addEventListener('click', function() {
-      if (customModel) {
-        customModelGroup.remove(customModel);
-        disposeHierarchy(customModel);
-        customModel = null;
-        baseModelScale = 1;
-
-        document.getElementById('modelInfo').style.display = 'none';
-        document.getElementById('remove3DBtn').disabled = true;
-
-        log('✓ Model removed');
+    document.getElementById('removeAllBtn').addEventListener('click', function() {
+      if (confirm('Remove all models?')) {
+        removeAllModels();
       }
+    });
+
+    document.getElementById('autoRotateToggle').addEventListener('change', function(e) {
+      controls.autoRotate = e.target.checked;
+      log(controls.autoRotate ? '✓ Auto rotate ON' : '✓ Auto rotate OFF');
     });
 
     let time = 0;
@@ -693,6 +864,8 @@
     function animate() {
       requestAnimationFrame(animate);
       time += 0.01;
+
+      controls.update();
 
       let bass = 0;
       let mid = 0;
@@ -721,14 +894,23 @@
       core.rotation.y -= 0.002;
       coreMat.emissiveIntensity = 0.4 + midNorm * 0.6;
 
-      if (customModel) {
-        customModel.rotation.y += 0.01;
-        customModel.rotation.x = Math.sin(time) * 0.2;
+      customModels.forEach((modelData, index) => {
+        const model = modelData.model;
 
-        const modelScale = baseModelScale * (1 + bassNorm * 0.3);
-        customModel.scale.setScalar(modelScale);
-        customModel.position.y = baseModelY + Math.sin(time * 2) * 5 + midNorm * 10;
-      }
+        model.rotation.y += modelData.rotationSpeed;
+        model.rotation.x = Math.sin(time + modelData.floatOffset) * 0.2;
+
+        const modelScale = modelData.baseScale * (1 + bassNorm * 0.3);
+        model.scale.setScalar(modelScale);
+
+        const floatY = Math.sin(time * 2 + modelData.floatOffset) * 5 + midNorm * 10;
+        model.position.y = modelData.baseY + floatY;
+
+        const orbitAngle = time * 0.1 + (index / customModels.length) * Math.PI * 2;
+        const orbitRadius = 50 + Math.sin(time + index) * 10;
+        model.position.x = Math.cos(orbitAngle) * orbitRadius;
+        model.position.z = Math.sin(orbitAngle) * orbitRadius;
+      });
 
       waterDrops.forEach((item, i) => {
         const idx = Math.min(dataArray ? Math.floor((i / waterDrops.length) * dataArray.length) : 0, 127);
@@ -778,11 +960,6 @@
 
       pointLight1.intensity = 2 + bassNorm * 2;
       pointLight2.intensity = 2 + midNorm * 2;
-
-      camera.position.x = Math.sin(time * 0.2) * 8;
-      camera.position.z = 100 + Math.cos(time * 0.2) * 5;
-      camera.position.y = 20 + Math.sin(time * 0.15) * 3;
-      camera.lookAt(0, 10, 0);
 
       renderer.render(scene, camera);
     }
