@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DREAM</title>
+  <title>AQUA DIGITAL NATURE</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;500;700&display=swap');
     
     * { 
       margin: 0; 
@@ -15,9 +15,21 @@
     
     body { 
       overflow: hidden; 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-      font-family: 'Space Grotesk', sans-serif;
+      background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 50%, #98D8C8 100%);
+      font-family: 'Quicksand', sans-serif;
       color: #fff;
+    }
+    
+    /* 그레인 노이즈 효과 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /></filter><rect width="100%" height="100%" filter="url(%23noise)" opacity="0.15"/></svg>');
+      pointer-events: none;
+      z-index: 999;
+      mix-blend-mode: overlay;
     }
     
     /* START 화면 */
@@ -25,7 +37,7 @@
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 50%, #fbc2eb 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -34,142 +46,129 @@
     }
     #startScreen.hidden { display: none; }
     
-    .dream-title {
-      font-size: 120px;
-      font-weight: 300;
-      letter-spacing: 20px;
+    .title {
+      font-size: 80px;
+      font-weight: 700;
+      letter-spacing: 4px;
       color: #fff;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       text-transform: uppercase;
-      text-shadow: 0 0 40px rgba(255,255,255,0.5);
+      text-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
     
-    .dream-subtitle {
+    .subtitle {
       font-size: 18px;
       font-weight: 300;
-      letter-spacing: 8px;
-      color: rgba(255,255,255,0.8);
-      margin-bottom: 60px;
+      letter-spacing: 6px;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 50px;
       text-transform: uppercase;
     }
     
     #startBtn {
-      padding: 20px 60px;
-      font-size: 18px;
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 300;
-      background: rgba(255,255,255,0.2);
-      border: 2px solid rgba(255,255,255,0.5);
+      padding: 18px 50px;
+      font-size: 16px;
+      font-family: 'Quicksand', sans-serif;
+      font-weight: 500;
+      background: rgba(255,255,255,0.25);
+      border: 2px solid rgba(255,255,255,0.6);
       color: #fff;
       cursor: pointer;
-      letter-spacing: 4px;
+      letter-spacing: 3px;
       text-transform: uppercase;
       backdrop-filter: blur(10px);
-      border-radius: 50px;
+      border-radius: 40px;
       transition: all 0.3s;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
     }
     
     #startBtn:hover {
-      background: rgba(255,255,255,0.3);
-      border-color: #fff;
-      box-shadow: 0 0 30px rgba(255,255,255,0.5);
-      transform: translateY(-2px);
+      background: rgba(255,255,255,0.35);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 35px rgba(0,0,0,0.25);
     }
     
     /* 컨트롤 패널 */
     #controls {
       position: fixed;
-      top: 30px; left: 30px;
+      top: 25px; left: 25px;
       z-index: 100;
-      background: rgba(255,255,255,0.15);
-      padding: 25px;
+      background: rgba(255,255,255,0.2);
+      padding: 20px;
       border-radius: 20px;
       backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.3);
+      border: 1px solid rgba(255,255,255,0.4);
       box-shadow: 0 8px 32px rgba(0,0,0,0.1);
       display: none;
     }
     #controls.visible { display: block; }
     
     .control-title {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 700;
       letter-spacing: 2px;
       color: #fff;
-      margin-bottom: 15px;
+      margin-bottom: 12px;
       text-transform: uppercase;
     }
     
     .btn-group {
       display: flex;
-      gap: 10px;
-      margin-bottom: 12px;
+      gap: 8px;
+      margin-bottom: 10px;
       flex-wrap: wrap;
     }
     
     button {
-      padding: 12px 24px;
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      background: rgba(255,255,255,0.2);
-      border: 1px solid rgba(255,255,255,0.4);
+      padding: 10px 20px;
+      font-family: 'Quicksand', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.25);
+      border: 1px solid rgba(255,255,255,0.5);
       color: #fff;
       cursor: pointer;
       letter-spacing: 1px;
       text-transform: uppercase;
-      border-radius: 25px;
+      border-radius: 20px;
       backdrop-filter: blur(10px);
       transition: all 0.2s;
     }
     
     button:hover {
-      background: rgba(255,255,255,0.3);
-      border-color: #fff;
+      background: rgba(255,255,255,0.4);
       transform: translateY(-2px);
       box-shadow: 0 4px 15px rgba(255,255,255,0.3);
     }
     
     #status {
-      margin-top: 15px;
-      padding: 15px;
-      background: rgba(0,0,0,0.2);
+      margin-top: 12px;
+      padding: 12px;
+      background: rgba(0,0,0,0.15);
       border-radius: 10px;
-      font-size: 11px;
-      color: rgba(255,255,255,0.9);
-      max-height: 100px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.95);
+      max-height: 90px;
       overflow-y: auto;
       font-family: 'Courier New', monospace;
-      line-height: 1.6;
+      line-height: 1.5;
     }
     
-    #status::-webkit-scrollbar {
-      width: 6px;
-    }
-    
-    #status::-webkit-scrollbar-track {
-      background: rgba(255,255,255,0.1);
-      border-radius: 3px;
-    }
-    
-    #status::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,0.4);
-      border-radius: 3px;
-    }
+    #status::-webkit-scrollbar { width: 5px; }
+    #status::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    #status::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 3px; }
     
     #fileInput { display: none; }
     
-    canvas {
-      display: block;
-    }
+    canvas { display: block; }
   </style>
 </head>
 <body>
 
 <div id="startScreen">
-  <div class="dream-title">DREAM</div>
-  <div class="dream-subtitle">Visualizer</div>
-  <button id="startBtn">Start</button>
+  <div class="title">AQUA DIGITAL</div>
+  <div class="subtitle">Nature Visualizer</div>
+  <button id="startBtn">Enter</button>
 </div>
 
 <div id="controls">
@@ -181,7 +180,7 @@
   </div>
   
   <div class="btn-group">
-    <button id="uploadBtn">+ Load Audio</button>
+    <button id="uploadBtn">+ Audio</button>
   </div>
   
   <input type="file" id="fileInput" accept="audio/*">
@@ -192,190 +191,251 @@
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
 
-// 로그
 function log(msg) {
   const status = document.getElementById('status');
-  const time = new Date().toLocaleTimeString();
-  status.innerHTML += `<div>> [${time}] ${msg}</div>`;
+  status.innerHTML += `<div>> ${msg}</div>`;
   status.scrollTop = status.scrollHeight;
 }
 
 // 씬
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x667eea, 50, 200);
+scene.fog = new THREE.Fog(0x87CEEB, 80, 250);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-camera.position.z = 80;
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0, 20, 100);
 
 const renderer = new THREE.WebGLRenderer({ 
   antialias: true,
   alpha: true 
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x667eea, 1);
+renderer.setClearColor(0x87CEEB, 1);
 document.body.appendChild(renderer.domElement);
 
-// ===== 드림 비주얼 (동그라미 중심) =====
-
-// 1. 중앙 대형 구체 (반투명 글래스)
-const mainSphereGeo = new THREE.SphereGeometry(15, 64, 64);
-const mainSphereMat = new THREE.MeshPhysicalMaterial({
-  color: 0xffffff,
+// ===== 1. 중앙 지구본 (반투명 글래스) =====
+const globeGeo = new THREE.SphereGeometry(18, 64, 64);
+const globeMat = new THREE.MeshPhysicalMaterial({
+  color: 0x4A90E2,
   transparent: true,
-  opacity: 0.3,
+  opacity: 0.4,
   metalness: 0.1,
   roughness: 0.1,
-  transmission: 0.9,
-  thickness: 2,
+  transmission: 0.8,
+  thickness: 1.5,
   clearcoat: 1,
   clearcoatRoughness: 0.1
 });
-const mainSphere = new THREE.Mesh(mainSphereGeo, mainSphereMat);
-scene.add(mainSphere);
+const globe = new THREE.Mesh(globeGeo, globeMat);
+scene.add(globe);
 
-// 2. 내부 코어 구체 (발광)
-const coreGeo = new THREE.SphereGeometry(8, 32, 32);
+// 지구본 내부 코어
+const coreGeo = new THREE.SphereGeometry(12, 32, 32);
 const coreMat = new THREE.MeshStandardMaterial({
-  color: 0xfbc2eb,
-  emissive: 0xfbc2eb,
-  emissiveIntensity: 0.5,
+  color: 0x98D8C8,
+  emissive: 0x98D8C8,
+  emissiveIntensity: 0.4,
   transparent: true,
-  opacity: 0.7
+  opacity: 0.6
 });
 const core = new THREE.Mesh(coreGeo, coreMat);
 scene.add(core);
 
-// 3. 주파수 원형 링들 (동그라미)
-const circles = [];
-const circleCount = 48;
-for(let i = 0; i < circleCount; i++) {
-  const geo = new THREE.SphereGeometry(1.5, 16, 16);
-  const hue = (i / circleCount) * 0.3 + 0.7; // 파스텔 색상
-  const color = new THREE.Color().setHSL(hue, 0.6, 0.8);
-  
-  const mat = new THREE.MeshStandardMaterial({ 
-    color: color,
-    emissive: color,
-    emissiveIntensity: 0.3,
+// ===== 2. 물방울들 (주파수 반응) =====
+const waterDrops = [];
+const dropCount = 60;
+for(let i = 0; i < dropCount; i++) {
+  const size = Math.random() * 2 + 1;
+  const geo = new THREE.SphereGeometry(size, 16, 16);
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: 0x4FC3F7,
     transparent: true,
-    opacity: 0.8
+    opacity: 0.7,
+    metalness: 0.2,
+    roughness: 0.1,
+    transmission: 0.9,
+    thickness: 0.5
   });
-  const circle = new THREE.Mesh(geo, mat);
   
-  const angle = (i / circleCount) * Math.PI * 2;
-  const radius = 40;
-  circle.position.x = Math.cos(angle) * radius;
-  circle.position.z = Math.sin(angle) * radius;
+  const drop = new THREE.Mesh(geo, mat);
   
-  circles.push({
-    mesh: circle,
+  const angle = (i / dropCount) * Math.PI * 2;
+  const radius = 35 + Math.random() * 15;
+  drop.position.x = Math.cos(angle) * radius;
+  drop.position.z = Math.sin(angle) * radius;
+  drop.position.y = (Math.random() - 0.5) * 30;
+  
+  waterDrops.push({
+    mesh: drop,
     angle: angle,
     radius: radius,
-    baseY: 0
-  });
-  scene.add(circle);
-}
-
-// 4. 떠다니는 작은 구체들 (파티클 느낌)
-const floatingSpheres = [];
-for(let i = 0; i < 30; i++) {
-  const size = Math.random() * 2 + 0.5;
-  const geo = new THREE.SphereGeometry(size, 16, 16);
-  const hue = Math.random() * 0.3 + 0.7;
-  const color = new THREE.Color().setHSL(hue, 0.7, 0.85);
-  
-  const mat = new THREE.MeshStandardMaterial({
-    color: color,
-    emissive: color,
-    emissiveIntensity: 0.4,
-    transparent: true,
-    opacity: 0.6
-  });
-  
-  const sphere = new THREE.Mesh(geo, mat);
-  sphere.position.set(
-    (Math.random() - 0.5) * 100,
-    (Math.random() - 0.5) * 100,
-    (Math.random() - 0.5) * 60
-  );
-  
-  floatingSpheres.push({
-    mesh: sphere,
     speed: Math.random() * 0.02 + 0.01,
     offset: Math.random() * Math.PI * 2
   });
-  scene.add(sphere);
+  scene.add(drop);
 }
 
-// 5. 외곽 링들 (토러스)
-const rings = [];
-for(let i = 0; i < 4; i++) {
-  const ringGeo = new THREE.TorusGeometry(25 + i * 8, 0.5, 16, 64);
-  const hue = 0.7 + i * 0.05;
-  const color = new THREE.Color().setHSL(hue, 0.6, 0.8);
+// ===== 3. 나비들 (3D 모델 대신 간단한 형태) =====
+const butterflies = [];
+for(let i = 0; i < 15; i++) {
+  const group = new THREE.Group();
   
-  const ringMat = new THREE.MeshStandardMaterial({
-    color: color,
-    emissive: color,
-    emissiveIntensity: 0.3,
-    transparent: true,
-    opacity: 0.4
+  // 나비 날개 (두 개의 원뿔)
+  const wingGeo = new THREE.ConeGeometry(1.5, 3, 8);
+  const wingMat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color().setHSL(Math.random() * 0.15 + 0.05, 0.8, 0.6),
+    emissive: new THREE.Color().setHSL(Math.random() * 0.15 + 0.05, 0.8, 0.5),
+    emissiveIntensity: 0.3
   });
   
-  const ring = new THREE.Mesh(ringGeo, ringMat);
-  ring.rotation.x = Math.PI / 2 + (Math.random() - 0.5) * 0.3;
-  ring.rotation.y = (Math.random() - 0.5) * 0.3;
+  const leftWing = new THREE.Mesh(wingGeo, wingMat);
+  leftWing.rotation.z = Math.PI / 2;
+  leftWing.position.x = -1;
   
-  rings.push(ring);
-  scene.add(ring);
+  const rightWing = new THREE.Mesh(wingGeo, wingMat.clone());
+  rightWing.rotation.z = -Math.PI / 2;
+  rightWing.position.x = 1;
+  
+  group.add(leftWing, rightWing);
+  
+  group.position.set(
+    (Math.random() - 0.5) * 80,
+    Math.random() * 40 + 10,
+    (Math.random() - 0.5) * 80
+  );
+  
+  butterflies.push({
+    group: group,
+    speed: Math.random() * 0.02 + 0.01,
+    offset: Math.random() * Math.PI * 2,
+    leftWing: leftWing,
+    rightWing: rightWing
+  });
+  scene.add(group);
 }
 
-// 6. 파티클 시스템 (별 같은 느낌)
-const particleCount = 2000;
-const particleGeo = new THREE.BufferGeometry();
-const particlePositions = new Float32Array(particleCount * 3);
-const particleColors = new Float32Array(particleCount * 3);
-
-for(let i = 0; i < particleCount; i++) {
-  particlePositions[i*3] = (Math.random() - 0.5) * 300;
-  particlePositions[i*3+1] = (Math.random() - 0.5) * 300;
-  particlePositions[i*3+2] = (Math.random() - 0.5) * 200;
+// ===== 4. 떠다니는 섬들 (자연 요소) =====
+const islands = [];
+for(let i = 0; i < 5; i++) {
+  const islandGroup = new THREE.Group();
   
-  const hue = Math.random() * 0.3 + 0.7;
-  const color = new THREE.Color().setHSL(hue, 0.7, 0.9);
-  particleColors[i*3] = color.r;
-  particleColors[i*3+1] = color.g;
-  particleColors[i*3+2] = color.b;
+  // 땅 (초록색 구체)
+  const landGeo = new THREE.SphereGeometry(4, 16, 16);
+  const landMat = new THREE.MeshStandardMaterial({
+    color: 0x7CB342,
+    roughness: 0.8
+  });
+  const land = new THREE.Mesh(landGeo, landMat);
+  land.scale.y = 0.5;
+  islandGroup.add(land);
+  
+  // 나무 (원뿔)
+  const treeGeo = new THREE.ConeGeometry(2, 6, 8);
+  const treeMat = new THREE.MeshStandardMaterial({
+    color: 0x558B2F
+  });
+  const tree = new THREE.Mesh(treeGeo, treeMat);
+  tree.position.y = 3;
+  islandGroup.add(tree);
+  
+  islandGroup.position.set(
+    (Math.random() - 0.5) * 100,
+    Math.random() * 30 - 10,
+    (Math.random() - 0.5) * 60
+  );
+  
+  islands.push({
+    group: islandGroup,
+    speed: Math.random() * 0.005 + 0.002,
+    offset: Math.random() * Math.PI * 2
+  });
+  scene.add(islandGroup);
 }
 
-particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+// ===== 5. 물결 효과 (평면) =====
+const waterGeo = new THREE.PlaneGeometry(200, 200, 50, 50);
+const waterMat = new THREE.MeshStandardMaterial({
+  color: 0x4FC3F7,
+  transparent: true,
+  opacity: 0.4,
+  metalness: 0.3,
+  roughness: 0.2,
+  side: THREE.DoubleSide
+});
+const water = new THREE.Mesh(waterGeo, waterMat);
+water.rotation.x = -Math.PI / 2;
+water.position.y = -30;
+scene.add(water);
 
-const particleMat = new THREE.PointsMaterial({
-  size: 1.5,
+// 물결 애니메이션을 위한 버텍스 저장
+const waterPositions = waterGeo.attributes.position;
+
+// ===== 6. 구름 파티클 =====
+const cloudParticles = [];
+for(let i = 0; i < 20; i++) {
+  const cloudGeo = new THREE.SphereGeometry(5, 8, 8);
+  const cloudMat = new THREE.MeshStandardMaterial({
+    color: 0xFFFFFF,
+    transparent: true,
+    opacity: 0.6
+  });
+  const cloud = new THREE.Mesh(cloudGeo, cloudMat);
+  cloud.position.set(
+    (Math.random() - 0.5) * 150,
+    Math.random() * 40 + 30,
+    (Math.random() - 0.5) * 150
+  );
+  cloudParticles.push(cloud);
+  scene.add(cloud);
+}
+
+// ===== 7. 별 파티클 =====
+const starCount = 1500;
+const starGeo = new THREE.BufferGeometry();
+const starPositions = new Float32Array(starCount * 3);
+const starColors = new Float32Array(starCount * 3);
+
+for(let i = 0; i < starCount; i++) {
+  starPositions[i*3] = (Math.random() - 0.5) * 400;
+  starPositions[i*3+1] = (Math.random() - 0.5) * 400;
+  starPositions[i*3+2] = (Math.random() - 0.5) * 400;
+  
+  const color = new THREE.Color().setHSL(Math.random() * 0.3 + 0.5, 0.5, 0.8);
+  starColors[i*3] = color.r;
+  starColors[i*3+1] = color.g;
+  starColors[i*3+2] = color.b;
+}
+
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+const starMat = new THREE.PointsMaterial({
+  size: 1.2,
   vertexColors: true,
   transparent: true,
-  opacity: 0.6,
+  opacity: 0.7,
   blending: THREE.AdditiveBlending
 });
 
-const particles = new THREE.Points(particleGeo, particleMat);
-scene.add(particles);
+const stars = new THREE.Points(starGeo, starMat);
+scene.add(stars);
 
-// 조명 (부드러운 파스텔)
-const light1 = new THREE.PointLight(0xfbc2eb, 2, 100);
-light1.position.set(30, 30, 30);
-scene.add(light1);
+// ===== 조명 =====
+const sunLight = new THREE.DirectionalLight(0xFFFFAA, 1.5);
+sunLight.position.set(50, 50, 50);
+scene.add(sunLight);
 
-const light2 = new THREE.PointLight(0xa6c1ee, 2, 100);
-light2.position.set(-30, -30, 30);
-scene.add(light2);
+const skyLight = new THREE.HemisphereLight(0x87CEEB, 0x98D8C8, 0.8);
+scene.add(skyLight);
 
-const light3 = new THREE.PointLight(0xf093fb, 1.5, 100);
-light3.position.set(0, 40, -30);
-scene.add(light3);
+const pointLight1 = new THREE.PointLight(0x4FC3F7, 2, 100);
+pointLight1.position.set(30, 20, 30);
+scene.add(pointLight1);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+const pointLight2 = new THREE.PointLight(0x98D8C8, 2, 100);
+pointLight2.position.set(-30, 20, -30);
+scene.add(pointLight2);
+
+const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.5);
 scene.add(ambientLight);
 
 // ===== 오디오 =====
@@ -391,7 +451,7 @@ document.getElementById('startBtn').addEventListener('click', function() {
     analyser.fftSize = 256;
     dataArray = new Uint8Array(analyser.frequencyBinCount);
     
-    log('Audio context ready');
+    log('Ready');
     
     document.getElementById('startScreen').classList.add('hidden');
     document.getElementById('controls').classList.add('visible');
@@ -402,7 +462,7 @@ document.getElementById('startBtn').addEventListener('click', function() {
 });
 
 document.getElementById('playTestBtn').addEventListener('click', function() {
-  log('Playing test tone...');
+  log('Test...');
   
   if (!audioContext) return;
   
@@ -431,12 +491,12 @@ document.getElementById('playTestBtn').addEventListener('click', function() {
     currentSource = osc;
     isPlaying = true;
     
-    log('Test tone playing');
+    log('Playing');
     
     setTimeout(() => {
       if (osc) {
         osc.stop();
-        log('Test stopped');
+        log('Stopped');
       }
     }, 3000);
     
@@ -470,7 +530,7 @@ document.getElementById('fileInput').addEventListener('change', async function(e
     const arrayBuffer = await file.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     
-    log(`Duration: ${Math.round(audioBuffer.duration)}s`);
+    log(`${Math.round(audioBuffer.duration)}s`);
     
     if (currentSource) {
       currentSource.stop();
@@ -512,85 +572,120 @@ function animate() {
     const mid = dataArray.slice(30, 80).reduce((a,b) => a+b) / 50;
     const treble = dataArray.slice(80, 128).reduce((a,b) => a+b) / 48;
     
-    // 중앙 구체 - 부드러운 펄스
-    const mainScale = 1 + (bass/255) * 0.5;
-    mainSphere.scale.setScalar(mainScale);
-    mainSphere.rotation.y += 0.002;
-    mainSphereMat.opacity = 0.2 + (bass/255) * 0.3;
+    // 지구본
+    const globeScale = 1 + (bass/255) * 0.3;
+    globe.scale.setScalar(globeScale);
+    globe.rotation.y += 0.002;
+    globeMat.opacity = 0.3 + (bass/255) * 0.2;
     
-    // 코어 - 발광 강도
-    const coreScale = 1 + (mid/255) * 0.6;
+    // 코어
+    const coreScale = 1 + (mid/255) * 0.4;
     core.scale.setScalar(coreScale);
-    core.rotation.x += 0.005;
-    core.rotation.y -= 0.003;
-    coreMat.emissiveIntensity = 0.5 + (mid/255) * 1;
+    core.rotation.x += 0.003;
+    core.rotation.y -= 0.002;
+    coreMat.emissiveIntensity = 0.4 + (mid/255) * 0.6;
     
-    // 동그라미들 - 파도 효과
-    circles.forEach((item, i) => {
-      const idx = Math.floor((i / circles.length) * dataArray.length);
+    // 물방울들
+    waterDrops.forEach((item, i) => {
+      const idx = Math.floor((i / waterDrops.length) * dataArray.length);
       const value = dataArray[idx] / 255;
       
-      // Y축 움직임 (파도)
-      item.mesh.position.y = Math.sin(time * 2 + item.angle * 3) * 5 + value * 15;
+      item.mesh.position.y = Math.sin(time * 2 + item.offset) * 15 + value * 10;
+      item.mesh.scale.setScalar(1 + value * 1.5);
+      item.mesh.material.opacity = 0.5 + value * 0.4;
+    });
+    
+    // 나비들 - 날개 펄럭임
+    butterflies.forEach((item, i) => {
+      const freqValue = dataArray[i * 8] / 255;
       
-      // 크기 변화
-      const scale = 1 + value * 2;
-      item.mesh.scale.setScalar(scale);
+      item.group.position.y += Math.sin(time * 3 + item.offset) * 0.1;
+      item.group.rotation.y += 0.02;
       
-      // 발광 강도
-      item.mesh.material.emissiveIntensity = 0.3 + value * 0.7;
-      item.mesh.material.opacity = 0.6 + value * 0.3;
+      // 날개 펄럭임
+      const wingAngle = Math.sin(time * 10) * 0.5;
+      item.leftWing.rotation.y = wingAngle;
+      item.rightWing.rotation.y = -wingAngle;
+      
+      item.group.scale.setScalar(1 + freqValue * 0.3);
     });
     
-    // 떠다니는 구체들
-    floatingSpheres.forEach((item, i) => {
-      const freqValue = dataArray[i * 4] / 255;
-      item.mesh.position.y += Math.sin(time + item.offset) * item.speed;
-      item.mesh.scale.setScalar(1 + freqValue * 0.5);
-      item.mesh.material.emissiveIntensity = 0.4 + freqValue * 0.6;
+    // 섬들
+    islands.forEach((item, i) => {
+      item.group.position.y += Math.sin(time + item.offset) * item.speed;
+      item.group.rotation.y += 0.002;
+      
+      const freqValue = dataArray[i * 20] / 255;
+      item.group.scale.setScalar(1 + freqValue * 0.2);
     });
     
-    // 링들
-    rings.forEach((ring, i) => {
-      ring.rotation.z += 0.001 * (i + 1);
-      const freqValue = dataArray[20 + i * 20] / 255;
-      ring.scale.setScalar(1 + freqValue * 0.3);
-      ring.material.opacity = 0.3 + freqValue * 0.3;
+    // 물결
+    for(let i = 0; i < waterPositions.count; i++) {
+      const x = waterPositions.getX(i);
+      const y = waterPositions.getY(i);
+      const wave = Math.sin(x * 0.1 + time * 2) * Math.cos(y * 0.1 + time * 2) * (bass/255) * 3;
+      waterPositions.setZ(i, wave);
+    }
+    waterPositions.needsUpdate = true;
+    
+    // 구름
+    cloudParticles.forEach((cloud, i) => {
+      cloud.position.x += 0.02;
+      if (cloud.position.x > 100) cloud.position.x = -100;
+      cloud.material.opacity = 0.4 + (treble/255) * 0.3;
     });
     
-    // 파티클
-    particles.rotation.y += 0.0003;
-    particleMat.opacity = 0.4 + (treble/255) * 0.4;
+    // 별
+    stars.rotation.y += 0.0002;
+    starMat.opacity = 0.5 + (treble/255) * 0.4;
     
     // 조명
-    light1.intensity = 2 + (bass/255) * 2;
-    light2.intensity = 2 + (mid/255) * 2;
-    light3.intensity = 1.5 + (treble/255) * 1.5;
+    pointLight1.intensity = 2 + (bass/255) * 2;
+    pointLight2.intensity = 2 + (mid/255) * 2;
     
-    // 카메라 - 부드러운 움직임
-    camera.position.x = Math.sin(time * 0.3) * (bass/255) * 5;
-    camera.position.y = Math.cos(time * 0.2) * (mid/255) * 3;
+    // 카메라
+    camera.position.x = Math.sin(time * 0.2) * (bass/255) * 3;
+    camera.position.y = 20 + Math.cos(time * 0.15) * (mid/255) * 2;
     camera.lookAt(scene.position);
     
   } else {
     // 기본 애니메이션
-    mainSphere.rotation.y += 0.001;
-    core.rotation.x += 0.002;
+    globe.rotation.y += 0.001;
+    core.rotation.x += 0.001;
     core.rotation.y -= 0.001;
     
-    circles.forEach((item, i) => {
-      item.mesh.position.y = Math.sin(time + item.angle * 3) * 3;
+    waterDrops.forEach((item) => {
+      item.mesh.position.y = Math.sin(time + item.offset) * 10;
     });
     
-    floatingSpheres.forEach((item) => {
-      item.mesh.position.y += Math.sin(time + item.offset) * item.speed;
+    butterflies.forEach((item) => {
+      item.group.position.y += Math.sin(time * 2 + item.offset) * 0.05;
+      item.group.rotation.y += 0.01;
+      
+      const wingAngle = Math.sin(time * 8) * 0.4;
+      item.leftWing.rotation.y = wingAngle;
+      item.rightWing.rotation.y = -wingAngle;
     });
     
-    rings.forEach((ring, i) => {
-      ring.rotation.z += 0.0005 * (i + 1);
+    islands.forEach((item) => {
+      item.group.position.y += Math.sin(time + item.offset) * item.speed;
+      item.group.rotation.y += 0.001;
     });
     
-    particles.rotation.y += 0.0001;
+    for(let i = 0; i < waterPositions.count; i++) {
+      const x = waterPositions.getX(i);
+      const y = waterPositions.getY(i);
+      const wave = Math.sin(x * 0.1 + time) * Math.cos(y * 0.1 + time) * 1;
+      waterPositions.setZ(i, wave);
+    }
+    waterPositions.needsUpdate = true;
+    
+    cloudParticles.forEach((cloud) => {
+      cloud.position.x += 0.01;
+      if (cloud.position.x > 100) cloud.position.x = -100;
+    });
+    
+    stars.rotation.y += 0.0001;
   }
   
   renderer.render(scene, camera);
@@ -598,14 +693,13 @@ function animate() {
 
 animate();
 
-// 반응형
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-log('System ready');
+log('Ready');
 </script>
 </body>
 </html>
