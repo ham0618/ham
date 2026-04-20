@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js";
+
+      // 씬 설정
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // 오디오 설정
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      // 마이크 연결
+      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+        const source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+      });
+
+      // 파티클 시스템
+      const particleCount = 5000;
+      const positions = new Float32Array(particleCount * 3);
+      const colors = new Float32Array(particleCount * 3);
+
+      for (let i = 0; i < particleCount * 3; i += 3) {
+        positions[i] = (Math.random() - 0.5) * 50;
+        positions[i + 1] = (Math.random() - 0.5) * 50;
+        positions[i + 2] = (Math.random() - 0.5) * 50;
+
+        colors[i] = Math.random();
+        colors[i + 1] = Math.random();
+        colors[i + 2] = Math.random();
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(positions, 3)
+      );
+      geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.5,
+        vertexColors: true,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+      });
+
+      const particles = new THREE.Points(geometry, material);
+      scene.add(particles);
+
+      camera.position.z = 30;
+
+      // 애니메이션
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // 오디오 데이터 가져오기
+        analyser.getByteFrequencyData(dataArray);
+
+        // 평균 볼륨 계산
+        const avg = dataArray.reduce((a, b) => a + b) / bufferLength;
+        const scale = 1 + (avg / 255) * 2;
+
+        // 파티클 회전 & 스케일
+        particles.rotation.x += 0.001;
+        particles.rotation.y += 0.002;
+        particles.scale.set(scale, scale, scale);
+
+        // 색상 변화
+        const colors = geometry.attributes.color.array;
+        for (let i = 0; i < colors.length; i += 3) {
+          colors[i] = (Math.sin(Date.now() * 0.001 + i) + 1) / 2;
+          colors[i + 1] = (Math.cos(Date.now() * 0.001 + i) + 1) / 2;
+          colors[i + 2] = avg / 255;
+        }
+        geometry.attributes.color.needsUpdate = true;
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+      // 리사이즈 처리
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+</html>
