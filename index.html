@@ -10,10 +10,11 @@
       z-index: 100;
       color: white;
       font-family: monospace;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.8);
       padding: 15px;
       border-radius: 10px;
       border: 2px solid #00ffff;
+      max-width: 400px;
     }
     button {
       margin: 5px;
@@ -28,30 +29,23 @@
     }
     button:hover {
       background: rgba(0,255,255,0.4);
-      transform: scale(1.05);
     }
     #status {
       margin-top: 10px;
       color: #00ffff;
-      font-size: 14px;
+      font-size: 12px;
+      line-height: 1.5;
     }
     #fileInput {
-      display: none;
-    }
-    .file-label {
-      display: inline-block;
-      padding: 10px 20px;
-      background: rgba(255,0,255,0.2);
-      border: 2px solid #ff00ff;
+      margin: 10px 0;
       color: white;
-      cursor: pointer;
-      border-radius: 5px;
-      margin: 5px;
-      transition: all 0.3s;
     }
-    .file-label:hover {
-      background: rgba(255,0,255,0.4);
-      transform: scale(1.05);
+    .error {
+      color: #ff0000;
+      background: rgba(255,0,0,0.1);
+      padding: 5px;
+      border-radius: 3px;
+      margin-top: 5px;
     }
   </style>
 </head>
@@ -60,14 +54,23 @@
   <div>🎵 Audio Reactive Generative Art</div>
   <button id="playBtn">▶ Play 01.mp3</button>
   <button id="pauseBtn">⏸ Pause</button>
-  <label for="fileInput" class="file-label">📁 Upload Other File</label>
+  <div>또는 파일 선택:</div>
   <input type="file" id="fileInput" accept="audio/*">
-  <div id="status">Ready to play</div>
+  <div id="status">Ready</div>
 </div>
 
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/controls/OrbitControls.js';
+
+// 디버그 로그 함수
+function log(message, isError = false) {
+  const statusDiv = document.getElementById('status');
+  const timestamp = new Date().toLocaleTimeString();
+  const className = isError ? 'error' : '';
+  statusDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+  console.log(message);
+}
 
 // 씬 설정
 const scene = new THREE.Scene();
@@ -86,63 +89,73 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
 // 오디오 설정
-let audioContext, analyser, dataArray, audioSource, audioElement;
+let audioContext, analyser, dataArray, audioElement, sourceNode;
 let isAudioStarted = false;
 
-// 01.mp3 자동 로드 함수
-async function loadDefaultAudio() {
-  try {
-    document.getElementById('status').textContent = '⏳ Loading 01.mp3...';
-    
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioContext.createAnalyser();
-    analyser.fftSize = 512;
-    analyser.smoothingTimeConstant = 0.8;
-    dataArray = new Uint8Array(analyser.frequencyBinCount);
-    
-    // Audio Element 생성
-    audioElement = new Audio('01.mp3');
-    audioElement.crossOrigin = "anonymous";
-    audioElement.loop = true;
-    
-    // Audio Context에 연결
-    const source = audioContext.createMediaElementSource(audioElement);
-    source.connect(analyser);
-    analyser.connect(audioContext.destination);
-    
-    audioSource = source;
-    
-    // 로드 완료 대기
-    await new Promise((resolve, reject) => {
-      audioElement.addEventListener('canplaythrough', resolve, { once: true });
-      audioElement.addEventListener('error', reject, { once: true });
-      audioElement.load();
-    });
-    
-    document.getElementById('status').textContent = '✅ 01.mp3 loaded! Click Play';
-    
-  } catch(e) {
-    document.getElementById('status').textContent = `❌ Error loading 01.mp3: ${e.message}`;
-    console.error(e);
-  }
-}
-
-// Play 버튼
+// Play 버튼 - 직접 클릭으로 시작
 document.getElementById('playBtn').addEventListener('click', async () => {
   try {
+    log('🎵 Play 버튼 클릭됨');
+    
+    // AudioContext 생성
+    if (!audioContext) {
+      log('AudioContext 생성 중...');
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.8;
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
+      log('✅ AudioContext 생성 완료');
+    }
+    
+    // Audio Element 생성
     if (!audioElement) {
-      await loadDefaultAudio();
+      log('Audio Element 생성 중...');
+      audioElement = new Audio();
+      audioElement.src = '01.mp3';
+      audioElement.loop = true;
+      audioElement.volume = 0.7;
+      
+      // 이벤트 리스너
+      audioElement.addEventListener('loadeddata', () => {
+        log('✅ 오디오 파일 로드 완료');
+      });
+      
+      audioElement.addEventListener('error', (e) => {
+        log(`❌ 오디오 로드 에러: ${audioElement.error.message}`, true);
+        log('💡 01.mp3 파일이 HTML과 같은 폴더에 있는지 확인하세요', true);
+        log('💡 로컬 서버로 실행하고 있는지 확인하세요 (python -m http.server)', true);
+      });
+      
+      audioElement.addEventListener('canplay', () => {
+        log('✅ 재생 준비 완료');
+      });
+      
+      // Source Node 연결
+      if (!sourceNode) {
+        sourceNode = audioContext.createMediaElementSource(audioElement);
+        sourceNode.connect(analyser);
+        analyser.connect(audioContext.destination);
+        log('✅ 오디오 노드 연결 완료');
+      }
     }
     
+    // AudioContext Resume
     if (audioContext.state === 'suspended') {
+      log('AudioContext Resume 중...');
       await audioContext.resume();
+      log('✅ AudioContext 활성화됨');
     }
     
+    // 재생 시작
+    log('재생 시작 중...');
     await audioElement.play();
     isAudioStarted = true;
-    document.getElementById('status').textContent = '🎵 Playing 01.mp3';
+    log('🎵 재생 중!');
+    
   } catch(e) {
-    document.getElementById('status').textContent = `❌ Play error: ${e.message}`;
+    log(`❌ 에러 발생: ${e.message}`, true);
+    log(`에러 상세: ${e.stack}`, true);
   }
 });
 
@@ -150,24 +163,26 @@ document.getElementById('playBtn').addEventListener('click', async () => {
 document.getElementById('pauseBtn').addEventListener('click', () => {
   if (audioElement) {
     audioElement.pause();
-    document.getElementById('status').textContent = '⏸ Paused';
+    log('⏸ 일시정지');
   }
 });
 
-// 다른 파일 업로드
+// 파일 업로드
 document.getElementById('fileInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   
   try {
+    log(`📁 파일 선택됨: ${file.name}`);
+    
     // 기존 오디오 정지
     if (audioElement) {
       audioElement.pause();
       audioElement = null;
+      sourceNode = null;
     }
     
-    document.getElementById('status').textContent = `⏳ Loading ${file.name}...`;
-    
+    // AudioContext 생성
     if (!audioContext) {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioContext.createAnalyser();
@@ -176,31 +191,27 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
       dataArray = new Uint8Array(analyser.frequencyBinCount);
     }
     
+    log('파일 디코딩 중...');
     const arrayBuffer = await file.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     
-    if (audioSource && audioSource.stop) {
-      audioSource.stop();
-    }
-    
-    audioSource = audioContext.createBufferSource();
-    audioSource.buffer = audioBuffer;
-    audioSource.loop = true;
-    audioSource.connect(analyser);
+    log('재생 준비 중...');
+    const bufferSource = audioContext.createBufferSource();
+    bufferSource.buffer = audioBuffer;
+    bufferSource.loop = true;
+    bufferSource.connect(analyser);
     analyser.connect(audioContext.destination);
-    audioSource.start(0);
+    bufferSource.start(0);
     
     isAudioStarted = true;
-    document.getElementById('status').textContent = `🎵 Playing: ${file.name}`;
+    log(`🎵 ${file.name} 재생 중!`);
+    
   } catch(e) {
-    document.getElementById('status').textContent = `❌ Error: ${e.message}`;
+    log(`❌ 파일 로드 에러: ${e.message}`, true);
   }
 });
 
-// 페이지 로드 시 자동 로드
-window.addEventListener('load', loadDefaultAudio);
-
-// 메인 구체
+// 3D 오브젝트들
 const sphereGeometry = new THREE.IcosahedronGeometry(15, 4);
 const sphereMaterial = new THREE.MeshPhongMaterial({
   color: 0x00ffff,
@@ -212,7 +223,6 @@ const sphereMaterial = new THREE.MeshPhongMaterial({
 const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
 scene.add(sphere);
 
-// 와이어프레임
 const wireframeGeometry = new THREE.IcosahedronGeometry(15.5, 4);
 const wireframeMaterial = new THREE.MeshBasicMaterial({
   color: 0xff00ff,
@@ -220,4 +230,118 @@ const wireframeMaterial = new THREE.MeshBasicMaterial({
   transparent: true,
   opacity: 0.3
 });
-const wireframe = new THREE
+const wireframe = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
+scene.add(wireframe);
+
+const ringParticles = [];
+const ringCount = 3;
+
+for(let ring = 0; ring < ringCount; ring++) {
+  const particleCount = 200;
+  const positions = new Float32Array(particleCount * 3);
+  const radius = 25 + ring * 10;
+  
+  for(let i = 0; i < particleCount; i++) {
+    const angle = (i / particleCount) * Math.PI * 2;
+    positions[i * 3] = Math.cos(angle) * radius;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 5;
+    positions[i * 3 + 2] = Math.sin(angle) * radius;
+  }
+  
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  
+  const material = new THREE.PointsMaterial({
+    size: 0.5,
+    color: new THREE.Color().setHSL(ring / ringCount, 1, 0.5),
+    blending: THREE.AdditiveBlending,
+    transparent: true
+  });
+  
+  const particles = new THREE.Points(geometry, material);
+  ringParticles.push(particles);
+  scene.add(particles);
+}
+
+const pointLight = new THREE.PointLight(0xffffff, 1, 100);
+pointLight.position.set(0, 0, 30);
+scene.add(pointLight);
+
+const ambientLight = new THREE.AmbientLight(0x404040);
+scene.add(ambientLight);
+
+// 애니메이션
+let time = 0;
+const originalVertices = sphereGeometry.attributes.position.array.slice();
+
+function animate() {
+  requestAnimationFrame(animate);
+  time += 0.01;
+  
+  if (isAudioStarted && analyser) {
+    analyser.getByteFrequencyData(dataArray);
+    
+    const bass = dataArray.slice(0, 10).reduce((a, b) => a + b) / 10;
+    const mid = dataArray.slice(10, 50).reduce((a, b) => a + b) / 40;
+    const treble = dataArray.slice(50, 100).reduce((a, b) => a + b) / 50;
+    
+    const vertices = sphere.geometry.attributes.position.array;
+    
+    for(let i = 0; i < vertices.length; i += 3) {
+      const x = originalVertices[i];
+      const y = originalVertices[i + 1];
+      const z = originalVertices[i + 2];
+      
+      const distance = Math.sqrt(x*x + y*y + z*z);
+      const offset = bass / 255 * 5;
+      
+      vertices[i] = x + (x / distance) * offset;
+      vertices[i + 1] = y + (y / distance) * offset;
+      vertices[i + 2] = z + (z / distance) * offset;
+    }
+    sphere.geometry.attributes.position.needsUpdate = true;
+    
+    const hue = (time * 0.1 + mid / 255) % 1;
+    sphereMaterial.color.setHSL(hue, 1, 0.5);
+    sphereMaterial.emissive.setHSL(hue, 1, 0.2);
+    
+    wireframe.rotation.x = time * 0.5;
+    wireframe.rotation.y = time * 0.3;
+    wireframe.scale.set(1 + treble/255 * 0.3, 1 + treble/255 * 0.3, 1 + treble/255 * 0.3);
+    
+    ringParticles.forEach((ring, idx) => {
+      ring.rotation.y = time * (0.2 + idx * 0.1);
+      ring.material.size = 0.5 + (dataArray[idx * 30] / 255) * 2;
+      
+      const hue = (time * 0.05 + idx / ringCount) % 1;
+      ring.material.color.setHSL(hue, 1, 0.5);
+    });
+    
+    pointLight.intensity = 1 + bass / 255 * 2;
+    pointLight.color.setHSL((time * 0.1) % 1, 1, 0.5);
+  } else {
+    sphere.rotation.y += 0.005;
+    wireframe.rotation.x += 0.002;
+    wireframe.rotation.y += 0.003;
+    
+    const hue = (time * 0.05) % 1;
+    sphereMaterial.color.setHSL(hue, 1, 0.5);
+  }
+  
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+log('✅ 페이지 로드 완료');
+log('💡 Play 버튼을 클릭하거나 파일을 선택하세요');
+</script>
+</body>
+</html>
