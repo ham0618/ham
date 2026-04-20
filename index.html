@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AQUA DIGITAL NATURE - Multi Model + Orbit</title>
+  <title>AQUA DIGITAL NATURE - Texture Fixed</title>
   <link rel="icon" href="data:,">
 
   <script type="importmap">
@@ -295,7 +295,7 @@
 
   <div id="startScreen">
     <div class="title">AQUA DIGITAL</div>
-    <div class="subtitle">Multi Model + Orbit Control</div>
+    <div class="subtitle">Texture Fixed Version</div>
     <button id="startBtn">Enter</button>
   </div>
 
@@ -359,9 +359,14 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x87CEEB, 1);
+    
+    // 🔥 텍스처 인코딩 설정
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    
     document.body.appendChild(renderer.domElement);
 
-    // OrbitControls 추가
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
@@ -538,23 +543,32 @@
     const stars = new THREE.Points(starGeo, starMat);
     scene.add(stars);
 
-    const sunLight = new THREE.DirectionalLight(0xFFFFAA, 1.5);
+    // 🔥 조명 강화
+    const sunLight = new THREE.DirectionalLight(0xFFFFFF, 2.5);
     sunLight.position.set(50, 50, 50);
     scene.add(sunLight);
 
-    const skyLight = new THREE.HemisphereLight(0x87CEEB, 0x98D8C8, 0.8);
+    const skyLight = new THREE.HemisphereLight(0xFFFFFF, 0x98D8C8, 1.5);
     scene.add(skyLight);
 
-    const pointLight1 = new THREE.PointLight(0x4FC3F7, 2, 100);
-    pointLight1.position.set(30, 20, 30);
+    const pointLight1 = new THREE.PointLight(0xFFFFFF, 3, 150);
+    pointLight1.position.set(30, 40, 30);
     scene.add(pointLight1);
 
-    const pointLight2 = new THREE.PointLight(0x98D8C8, 2, 100);
-    pointLight2.position.set(-30, 20, -30);
+    const pointLight2 = new THREE.PointLight(0xFFFFFF, 3, 150);
+    pointLight2.position.set(-30, 40, -30);
     scene.add(pointLight2);
 
-    const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.5);
+    const ambientLight = new THREE.AmbientLight(0xFFFFFF, 1.2);
     scene.add(ambientLight);
+
+    const modelSpotLight = new THREE.SpotLight(0xFFFFFF, 4);
+    modelSpotLight.position.set(0, 80, 0);
+    modelSpotLight.angle = Math.PI / 3;
+    modelSpotLight.penumbra = 0.3;
+    modelSpotLight.decay = 1;
+    modelSpotLight.distance = 200;
+    scene.add(modelSpotLight);
 
     function disposeHierarchy(object) {
       object.traverse((child) => {
@@ -566,6 +580,46 @@
           } else if (child.material.dispose) {
             child.material.dispose();
           }
+        }
+      });
+    }
+
+    // 🔥 텍스처 수정 함수
+    function fixTextures(model) {
+      model.traverse((child) => {
+        if (child.isMesh) {
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+          
+          materials.forEach((mat) => {
+            if (mat.map) {
+              mat.map.colorSpace = THREE.SRGBColorSpace;
+              mat.map.needsUpdate = true;
+            }
+            
+            if (mat.emissiveMap) {
+              mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+              mat.emissiveMap.needsUpdate = true;
+            }
+            
+            if (mat.normalMap) {
+              mat.normalMap.colorSpace = THREE.LinearSRGBColorSpace;
+              mat.normalMap.needsUpdate = true;
+            }
+            
+            if (mat.roughnessMap) {
+              mat.roughnessMap.colorSpace = THREE.LinearSRGBColorSpace;
+              mat.roughnessMap.needsUpdate = true;
+            }
+            
+            if (mat.metalnessMap) {
+              mat.metalnessMap.colorSpace = THREE.LinearSRGBColorSpace;
+              mat.metalnessMap.needsUpdate = true;
+            }
+            
+            mat.needsUpdate = true;
+            child.castShadow = true;
+            child.receiveShadow = true;
+          });
         }
       });
     }
@@ -626,6 +680,9 @@
             const model = gltf.scene;
             const id = modelIdCounter++;
 
+            // 🔥 텍스처 수정 적용
+            fixTextures(model);
+
             const box = new THREE.Box3().setFromObject(model);
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z) || 1;
@@ -637,7 +694,6 @@
             const center = box.getCenter(new THREE.Vector3());
             model.position.sub(center);
 
-            // 모델들을 원형으로 배치
             const angle = (customModels.length / 5) * Math.PI * 2;
             const radius = 50;
             const baseX = Math.cos(angle) * radius;
@@ -666,7 +722,7 @@
             customModels.push(modelData);
 
             log(`✓ Model loaded: ${file.name}`);
-            log(`  ID: ${id}, Size: ${modelData.sizeText}`);
+            log(`  Textures fixed & optimized`);
 
             updateModelListUI();
           },
@@ -723,9 +779,7 @@
 
         log('✓ Audio ready');
         log('✓ OrbitControls enabled');
-        log('  - Left drag: Rotate');
-        log('  - Right drag: Pan');
-        log('  - Wheel: Zoom');
+        log('✓ Texture system optimized');
 
         document.getElementById('startScreen').classList.add('hidden');
         document.getElementById('controls').classList.add('visible');
